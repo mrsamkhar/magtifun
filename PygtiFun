@@ -1,0 +1,38 @@
+import requests
+from bs4 import BeautifulSoup
+
+with  requests.Session() as s:
+
+    #extract csrf Token
+    html = s.get('http://www.magtifun.ge/index.php?page=11&lang=ge').text
+    soup = BeautifulSoup(html, "html.parser")
+    token = soup.find("input", {"name": "csrf_token"})["value"]
+
+
+    #login data
+    values = dict(password='Password', user='user', act='1', csrf_token=token)
+
+
+    #login into magtifun.ge
+    s.post('http://www.magtifun.ge/index.php?page=11&lang=ge', data=values)
+
+
+    #extract token for sending sms
+    html1 = s.get('http://www.magtifun.ge/index.php?page=2&lang=ge').text
+    soup1 = BeautifulSoup(html1, "html.parser")
+    token1 = soup1.find("input", {"name": "csrf_token"})["value"]
+
+
+    #input recipient and message text from command line
+    recipient = int(input("შეიყვანეთ მიმღების ნომერი: (5XX XX XX XX)"))
+    message = input("შეიყვანეთ შეტყობინება:")
+
+    values1 = dict(recipients=recipient, message_body=message, csrf_token=token1)
+
+    #sending message
+    r = s.post('http://www.magtifun.ge/scripts/sms_send.php', data=values1,
+           headers=dict(Referer="http://www.magtifun.ge/index.php?page=2&lang=ge")).text
+    if r == "success":
+        print("შეტყობინება გაგზავნილია")
+    else:
+        print("შეტყობინება არ გაიგზავნა \n" + r)
